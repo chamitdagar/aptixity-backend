@@ -52,3 +52,62 @@ exports.generatePrompt = async (req, res) => {
     });
   }
 };
+
+exports.generateRequirements = async (req, res) => {
+  const { description, projectType } = req.body;
+  
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(400).json({ message: "OpenRouter API Key is missing." });
+  }
+
+  try {
+    const prompt = `Act as a Senior Solution Architect. 
+    A client wants to build a ${projectType} project. 
+    Brief Idea: ${description}
+    
+    Task: Generate a detailed list of technical requirements and features for this project.
+    
+    Format the output as a professional technical specification document.
+    - Start with a high-level summary.
+    - Include Core Features.
+    - Include Technical Stack recommendations (React, Node.js, etc.).
+    - Include UI/UX guidelines (Cinematic, Modern).
+    - NO MARKDOWN SYMBOLS (no #, no **). Use CAPITALS for headers.
+    
+    Keep it concise but comprehensive.`;
+
+    console.log("AI Request initiated for Project Requirements...");
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:5000",
+        "X-Title": "Aptixity Platform"
+      },
+      body: JSON.stringify({
+        "model": "google/gemini-2.0-flash-001",
+        "messages": [{ "role": "user", "content": prompt }]
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error("OpenRouter API Error Response:", data);
+      throw new Error(data.error?.message || "Failed to reach AI Engine");
+    }
+
+    if (!data.choices || !data.choices[0]) {
+      console.error("Unexpected AI Response Structure:", data);
+      throw new Error("AI returned an empty response stream.");
+    }
+
+    const requirements = data.choices[0].message.content;
+    console.log("AI Requirements generated successfully.");
+    res.json({ requirements });
+  } catch (err) {
+    console.error("AI Controller Error:", err);
+    res.status(500).json({ message: "Neural Link Failure: " + err.message });
+  }
+};

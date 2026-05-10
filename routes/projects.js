@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const admin = require('../middleware/admin');
 
 router.get('/', projectController.getAllProjects);
+router.get('/:id', projectController.getProjectById);
 router.post('/', auth, admin, projectController.createProject);
 router.put('/:id', auth, admin, projectController.updateProject);
 router.delete('/:id', auth, admin, projectController.deleteProject);
